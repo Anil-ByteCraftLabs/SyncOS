@@ -1,3 +1,241 @@
-1. Need to connect with database as mentioned in the .env file
-2. Migrate the database
-3. change the fields in the env files like add the proper API KEYS for shipdation,quickbooks and all
+Below is the documentation for the `order_management` Django application, formatted as a step-by-step guide that you can copy into a file (e.g., `README.md` or a `.txt` file). Each step is clearly outlined to assist other developers or users in setting up and using the application. The content is based on the current state of the project as of 05:23 PM IST on Thursday, July 31, 2025.
+
+---
+
+### File Content: `README.md` or `setup_instructions.txt`
+
+```markdown
+# Order Management Application Setup and Usage Guide
+
+## Overview
+The `order_management` application is a Django-based web service for managing orders, integrating with ShipStation for shipping, and QuickBooks for accounting. It provides RESTful APIs to create/retrieve orders and invoices, with data stored in a PostgreSQL database.
+
+- **Current Date and Time**: 05:23 PM IST, Thursday, July 31, 2025.
+- **Features**: Order creation/retrieval, ShipStation sync, QuickBooks invoice management, OpenAPI docs.
+
+## Prerequisites
+- Python 3.11+
+- PostgreSQL
+- pip (Python package manager)
+- Git (optional)
+
+## Installation Steps
+
+### Step 1: Obtain the Project
+- Clone the repository or download the `order_management.zip` file:
+  ```bash
+  git clone https://github.com/yourusername/order_management.git
+  ```
+  or
+  - Download `order_management.zip` and extract it to a directory.
+
+### Step 2: Navigate to the Project Directory
+```bash
+cd order_management
+```
+
+### Step 3: Install Dependencies
+Install required Python packages:
+```bash
+pip install -r requirements.txt
+```
+If `requirements.txt` is missing, create it with:
+```
+django==4.2
+djangorestframework==3.14.0
+django-environ==0.10.0
+psycopg2-binary==2.9.9
+requests==2.31.0
+python-decouple==3.8
+dj-database-url==2.1.0
+python-quickbooks==0.7.0
+intuitlib==1.0.0
+```
+Then run:
+```bash
+pip install -r requirements.txt
+```
+
+### Step 4: Configure Environment Variables
+Create or edit the `.env` file in the `order_management` directory:
+```
+DATABASE_URL=postgresql://username:password@localhost:5432/order_db
+SHIPSTATION_API_KEY=your_shipstation_api_key
+SHIPSTATION_API_SECRET=your_shipstation_api_secret
+SECRET_KEY=your_django_secret_key
+DEBUG=True
+QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id
+QUICKBOOKS_CLIENT_SECRET=your_quickbooks_client_secret
+QUICKBOOKS_REFRESH_TOKEN=your_quickbooks_refresh_token
+QUICKBOOKS_COMPANY_ID=your_quickbooks_company_id
+QUICKBOOKS_REDIRECT_URI=http://localhost:8000/quickbooks/callback
+```
+- Replace `username`, `password`, and `order_db` with your PostgreSQL credentials.
+- Get `SHIPSTATION_API_KEY` and `SHIPSTATION_API_SECRET` from ShipStation Developer Portal.
+- Get `QUICKBOOKS_*` credentials from Intuit Developer Portal.
+- Generate `SECRET_KEY` with:
+  ```bash
+  python -c "import secrets; print(secrets.token_urlsafe(50))"
+  ```
+
+### Step 5: Set Up the Database
+1. Ensure PostgreSQL is running.
+2. Apply migrations:
+   ```bash
+   python manage.py makemigrations
+   python manage.py migrate
+   ```
+3. (Optional) Create a superuser:
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+### Step 6: Run the Application
+Start the Django development server:
+```bash
+python manage.py runserver
+```
+Access the app at `http://localhost:8000/`.
+
+## Usage Steps
+
+### Step 1: Explore API Endpoints
+- View interactive documentation at `http://localhost:8000/docs/`.
+
+#### Orders API (orders app)
+- **Create an Order**
+  - **Endpoint**: `POST /api/create/`
+  - **Request**:
+    ```bash
+    curl -X POST "http://localhost:8000/api/create/" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "order_number": "TEST-ORDER-20250731",
+      "order_date": "2025-07-09T16:18:00",
+      "order_status": "awaiting_shipment",
+      "customer_email": "testcustomer@example.com",
+      "bill_to": {
+          "name": "John Doe",
+          "company": "Example Corp",
+          "street1": "123 Main St",
+          "city": "Anytown",
+          "state": "CA",
+          "postal_code": "90210",
+          "country": "US",
+          "phone": "555-123-4567"
+      },
+      "ship_to": {
+          "name": "Jane Smith",
+          "company": "Example Corp",
+          "street1": "456 Oak Ave",
+          "city": "Othertown",
+          "state": "NY",
+          "postal_code": "10001",
+          "country": "US",
+          "phone": "555-987-6543",
+          "residential": true
+      },
+      "items": [
+          {
+              "sku": "ITEM001",
+              "name": "Sample Product",
+              "quantity": 1,
+              "unit_price": 29.99,
+              "weight_value": 2,
+              "weight_units": "pounds"
+          }
+      ]
+    }'
+    ```
+  - **Response**: 201 Created with order data.
+  - **Note**: Syncs with ShipStation.
+
+- **Get Order Details**
+  - **Endpoint**: `GET /api/detail/<order_number>/`
+  - **Example**: `GET /api/detail/TEST-ORDER-20250731/`
+  - **Response**: 200 OK with details or 404 if not found.
+
+#### QuickBooks API (quickbooks_integration app)
+- **Create an Invoice**
+  - **Endpoint**: `POST /quickbooks/create-invoice/`
+  - **Request**:
+    ```bash
+    curl -X POST "http://localhost:8000/quickbooks/create-invoice/" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "order_number": "QB-ORDER-20250731",
+      "customer_name": "John Doe",
+      "total_amount": 99.99
+    }'
+    ```
+  - **Response**: 201 Created with invoice data.
+  - **Note**: Creates customer and invoice in QuickBooks.
+
+- **Get Invoice Details**
+  - **Endpoint**: `GET /quickbooks/get-invoice/<qb_invoice_id>/`
+  - **Example**: `GET /quickbooks/get-invoice/12345/`
+  - **Response**: 200 OK with details or 404 if not found.
+
+### Step 2: Access Admin Interface
+- Visit `http://localhost:8000/admin/` and log in with superuser credentials to manage records.
+
+## Configuration Steps
+- Edit `.env` with your credentials as described in Step 4 of Installation.
+- Ensure PostgreSQL is configured and running.
+- Update `ALLOWED_HOSTS` in `settings.py` for production deployment.
+
+## Development Steps
+- Set `DEBUG=True` in `.env` for development.
+- Extend models, serializers, and views as needed.
+- Add tests with `python manage.py test`.
+
+## Deployment Steps
+- Set `DEBUG=False` in `.env`.
+- Use a WSGI server (e.g., Gunicorn) and a web server (e.g., Nginx).
+- Remove `verify=False` in API calls after setting up SSL.
+- Update `ALLOWED_HOSTS` with your domain.
+
+## Troubleshooting Steps
+- **Database Errors**: Check PostgreSQL status and credentials.
+- **API Failures**: Review terminal logs or configure logging.
+- **Migration Issues**: Delete `migrations` folder in app directory and rerun `makemigrations`.
+
+## Contributing Steps
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature-name`.
+3. Commit changes: `git commit -m "Add feature"`.
+4. Push to branch: `git push origin feature-name`.
+5. Open a pull request.
+
+## License
+[Specify your license, e.g., MIT] - Default is no license unless specified.
+
+## Contact
+For support, contact [your email or support channel].
+```
+
+---
+
+### How to Use This File
+
+1. **Create the File**:
+   - Open a text editor (e.g., Notepad, VS Code).
+   - Copy the entire content above.
+   - Save it as `README.md` in the `order_management` directory root, or as `setup_instructions.txt` if you prefer a plain text format.
+
+2. **Incorporate into Project**:
+   - Ensure the file is included when you recompress the `order_management` folder into `order_management.zip`:
+     - Right-click `order_management` and select "Compress" or use:
+       ```bash
+       zip -r order_management.zip order_management
+       ```
+
+3. **Distribute**:
+   - Share the `order_management.zip` file or the Git repository with other users.
+
+### Notes
+- **Customization**: Replace placeholders like `yourusername`, `your_email`, and license details with actual values.
+- **Version Control**: If using Git, commit the `README.md` file to track changes.
+- **Time Reference**: The documentation reflects the current time (05:23 PM IST, July 31, 2025) and should be updated if reused later.
+
+This step-by-step guide ensures that others can easily set up and use the `order_management` application. Let me know if you need further refinements!
